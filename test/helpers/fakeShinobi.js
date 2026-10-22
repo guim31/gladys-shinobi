@@ -41,8 +41,8 @@ export class FakeShinobi {
     this.canSocket = true;
     this.down = false;
     this.socketDown = false;
-    // Engine.IO versions the socket server speaks.
-    this.eio = [4];
+    // The Engine.IO version of the socket server.
+    this.eio = 4;
     this.requests = [];
     this.sockets = new Set();
     this.frame = FRAME;
@@ -160,7 +160,6 @@ class FakeSocket extends EventTarget {
     super();
     this.server = server;
     this.url = url;
-    this.eio = Number(new URL(url).searchParams.get('EIO'));
     this.logged = false;
     this.followed = new Set();
     this.open = true;
@@ -181,7 +180,7 @@ class FakeSocket extends EventTarget {
   }
 
   start() {
-    if (this.server.down || this.server.socketDown || !this.server.eio.includes(this.eio)) {
+    if (this.server.down || this.server.socketDown) {
       this.open = false;
       this.dispatch('error', { message: 'Unexpected server response: 400' });
       this.dispatch('close');
@@ -189,11 +188,19 @@ class FakeSocket extends EventTarget {
     }
     this.server.sockets.add(this);
     this.dispatch('open');
+    // An Engine.IO 3 server answers whatever EIO is asked: no `maxPayload`,
+    // and it joins the default namespace itself.
+    const v3 = this.server.eio === 3;
     this.reply(
-      `0${JSON.stringify({ sid: 'fake', upgrades: [], pingInterval: 60000, pingTimeout: 130000 })}`,
+      `0${JSON.stringify({
+        sid: 'fake',
+        upgrades: [],
+        pingInterval: v3 ? 25000 : 60000,
+        pingTimeout: v3 ? 5000 : 130000,
+        ...(v3 ? {} : { maxPayload: 1000000 }),
+      })}`,
     );
-    if (this.eio === 3) {
-      // Engine.IO 3: the server joins the default namespace itself.
+    if (v3) {
       this.reply('40');
     }
   }

@@ -16,9 +16,10 @@
 // ["pong",{beat}]. An API key needs the "Can Authenticate Websocket"
 // permission (`auth_socket`) for `init`.
 //
-// An older Shinobi (Socket.IO 2) only speaks Engine.IO 3: when the server
-// closes before its open packet, the next try asks EIO=3, where the client
-// pings and the server joins the namespace itself.
+// An older Shinobi (Socket.IO 2) speaks Engine.IO 3 whatever is asked: its
+// open packet has no `maxPayload`, the server joins the namespace itself and
+// the client pings. Such a Shinobi has no `detector_on` either (checked on the
+// 2021 Docker Hub image): the socket opens, but no detection comes.
 // -----------------------------------------------------------------------------
 
 import { createLogger } from '@gladysassistant/integration-sdk';
@@ -88,7 +89,6 @@ export class ShinobiSocket {
     }
     await new Promise((resolve, reject) => {
       let settled = false;
-      let opened = false;
       const settle = (err) => {
         if (settled) {
           return;
@@ -107,7 +107,7 @@ export class ShinobiSocket {
       );
       let ws;
       try {
-        ws = new this.WebSocket(this.client.socketUrl(this.eio));
+        ws = new this.WebSocket(this.client.socketUrl(4));
       } catch (err) {
         settle(new ShinobiError(`Cannot open the Shinobi socket: ${err.message}`));
         return;
@@ -130,12 +130,17 @@ export class ShinobiSocket {
         const text = String(event.data);
         this.heard();
         if (text.startsWith('0')) {
-          opened = true;
+          let open = {};
           try {
-            this.pingInterval = Number(JSON.parse(text.slice(1)).pingInterval) || 25000;
+            open = JSON.parse(text.slice(1)) ?? {};
           } catch {
-            // The default interval.
+            // The defaults.
           }
+          this.pingInterval = Number(open.pingInterval) || 25000;
+          // Engine.IO 4 announces `maxPayload`; an Engine.IO 3 server (an
+          // older Shinobi, Socket.IO 2) does not check the EIO asked, answers
+          // without it, joins the namespace itself and waits for client pings.
+          this.eio = open.maxPayload === undefined ? 3 : 4;
           if (this.eio === 4) {
             send('40');
           } else {
@@ -188,10 +193,6 @@ export class ShinobiSocket {
         );
       });
       ws.addEventListener('close', () => {
-        if (!opened && ws === this.ws) {
-          // Closed before any Engine.IO packet: maybe an older Socket.IO.
-          this.eio = this.eio === 4 ? 3 : 4;
-        }
         settle(new ShinobiError('The Shinobi socket closed', { kind: 'network' }));
         this.lost(ws);
       });

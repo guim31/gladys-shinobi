@@ -123,7 +123,7 @@ for (const scenario of scenarios) {
   });
 }
 
-test('detections are 1 when detected; the mode is the only command; online read only', async () => {
+test('detections are 1 when detected; the mode is the only command', async () => {
   const { fake, app } = await createWorld({ server: server() });
   try {
     for (const device of fake.discoveredDevices) {
@@ -137,6 +137,11 @@ test('detections are 1 when detected; the mode is the only command; online read 
       for (const item of device.features.filter((feature) => feature.type === 'binary')) {
         assert.deepEqual([item.min, item.max], [0, 1]);
       }
+      // camera/enabled is the user's private mode in the core (at 0 it blocks
+      // the images), never an online state the integration would publish.
+      assert.ok(
+        !device.features.some((item) => item.category === 'camera' && item.type === 'enabled'),
+      );
       const image = device.features.find((item) => item.type === 'image');
       assert.deepEqual([image.read_only, image.keep_history], [true, false]);
     }

@@ -8,9 +8,11 @@
 //     (`motion-sensor/binary`, same reset), when the monitor uses one;
 //   - `mode`: the mode of the monitor (`text/select`: `start` watch only,
 //     `record`, `idle`, `stop`), which the dashboard can change: a deliberate
-//     choice in a list, never a toggle a voice assistant flips;
-//   - `online`: the monitor runs and its stream comes in (`camera/enabled`,
-//     read only).
+//     choice in a list, never a toggle a voice assistant flips.
+// Whether the stream comes in is the device's transport badge (`local` /
+// `unreachable`) and the "Camera offline" trigger, not a feature: the core's
+// `camera/enabled` is the user's private mode (at 0 it blocks the images),
+// not an online state.
 //
 // Feature keys are forever: they are part of the external ids.
 // -----------------------------------------------------------------------------
@@ -24,10 +26,9 @@ export const FEATURE_KEYS = {
   MOTION: 'motion',
   OBJECT: 'object',
   MODE: 'mode',
-  ONLINE: 'online',
 };
 
-// Feature names, frozen when the user adds the device.
+// Feature names, frozen when the user adds the device (`online`: the widget only).
 export const NAMES = {
   en: {
     image: 'Image',
@@ -134,7 +135,6 @@ export function featureSpecs(monitor, language) {
       sort_order: index,
     })),
   });
-  specs.push(binary(FEATURE_KEYS.ONLINE, 'camera', 'enabled', names.online));
   return specs;
 }
 

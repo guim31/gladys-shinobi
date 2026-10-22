@@ -54,10 +54,10 @@ Each Shinobi monitor becomes a Gladys camera, named as in Shinobi, with:
 | **Motion**          | 1 when Shinobi's motion detector saw motion a moment ago, else 0.                  |
 | **Object detected** | 1 when an object plugin saw an object a moment ago, else 0. If the monitor has it. |
 | **Mode**            | Watch only, Record, Idle or Disabled. A list: the dashboard can change it.         |
-| **Online**          | 1 when the monitor runs and its stream comes in, else 0.                           |
 
-A camera whose stream is lost shows as unreachable in Gladys. **Mode** is a list on purpose, never a
-switch a voice assistant would flip by mistake; **Online** is read only. A large Shinobi snapshot is
+Whether the stream comes in is shown by the device itself: a camera whose stream is lost shows as
+unreachable in Gladys (and fires **Shinobi: camera offline**). **Mode** is a list on purpose, never a
+switch a voice assistant would flip by mistake. A large Shinobi snapshot is
 made smaller in the integration to fit Gladys (150 KB per image).
 
 ## Dashboard widget
@@ -128,6 +128,8 @@ motion detected** or **Shinobi: object detected**, it is the image of that momen
 - Regions and labels are filtered as written in Shinobi: the scene filters only compare text.
 - Disabling a camera is done from the **Mode** list or in Shinobi, not by a scene action.
 - Past recordings, events history, PTZ and timelapses are not covered.
+- Live detections need a recent Shinobi: the 2021 image of Docker Hub does not send them (the states
+  are then read every minute).
 - One Shinobi group (one group key) per integration.
 - Developed without the hardware: feedback welcome. Tested with the official Shinobi image in Docker
   and a simulated camera; the objects were simulated through Shinobi's own API, without a plugin.

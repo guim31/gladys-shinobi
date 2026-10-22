@@ -270,9 +270,10 @@ export class ShinobiHub {
   async stop() {
     this.stopped = true;
     this.clearTimers();
-    this.clearCameraTimers();
     this.socket?.close();
     await this.idle();
+    // After the tasks still running: they may have planned a timer.
+    this.clearCameraTimers();
   }
 
   // --- Socket.IO -------------------------------------------------------------------
@@ -402,7 +403,7 @@ export class ShinobiHub {
     camera.lastLabels = kind === 'object' ? hits.map((hit) => hit.label) : camera.lastLabels;
     clearTimeout(camera.resetTimers[kind]);
     camera.resetTimers[kind] = null;
-    if (this.useTimers) {
+    if (this.useTimers && !this.stopped) {
       camera.resetTimers[kind] = setTimeout(() => {
         camera.resetTimers[kind] = null;
         this.track(this.endDetection(camera, kind));
@@ -518,13 +519,27 @@ export class ShinobiHub {
         }
         clearTimeout(camera.offlineTimer);
         this.cameras.delete(id);
+        if (generation !== this.generation) {
+          return;
+        }
       }
     }
+    // A new configuration may come during any of these steps: this list
+    // speaks of the old server, it must not set the new one's status.
+    if (generation !== this.generation) {
+      return;
+    }
     await this.setServer('ok');
+    if (generation !== this.generation) {
+      return;
+    }
     this.ensureSocket();
     this.socket?.follow([...seen]);
     await this.publishDevices();
     for (const camera of this.cameras.values()) {
+      if (generation !== this.generation) {
+        return;
+      }
       await this.checkOnline(camera);
     }
     await this.publishAllStates();
@@ -732,7 +747,6 @@ export class ShinobiHub {
         text: camera.mode,
       });
     }
-    add(FEATURE_KEYS.ONLINE, camera.online);
     return states;
   }
 
@@ -827,7 +841,7 @@ export class ShinobiHub {
     camera.offlineSince ??= now;
     if (camera.online === null || now - camera.offlineSince >= this.timings.offlineAfterMs) {
       await this.setOnline(camera, false);
-    } else if (!camera.offlineTimer && this.useTimers) {
+    } else if (!camera.offlineTimer && this.useTimers && !this.stopped) {
       // Restarting, starting: look again when the delay is over.
       camera.offlineTimer = setTimeout(() => {
         camera.offlineTimer = null;
@@ -905,14 +919,16 @@ export class ShinobiHub {
     if (!this.isCreated(camera) || !this.client) {
       return false;
     }
-    const left = camera.lastPublishAt + this.timings.minImageSpacingMs - Date.now();
-    if (left > 0) {
-      if (!wait) {
-        return false;
-      }
-      await sleep(left);
+    const now = Date.now();
+    const at = Math.max(now, camera.lastPublishAt + this.timings.minImageSpacingMs);
+    if (at > now && !wait) {
+      return false;
     }
-    camera.lastPublishAt = Date.now();
+    // Booked before waiting: a second detection meanwhile waits its own turn.
+    camera.lastPublishAt = at;
+    if (at > now) {
+      await sleep(at - now);
+    }
     try {
       const jpeg = await this.grab(camera);
       // The DEVICE external id: the core answers 404 to a feature's.
@@ -961,8 +977,7 @@ export class ShinobiHub {
     await this.client.setMode(camera.id, mode);
     logger.info(`Monitor ${camera.id} set to ${mode}`);
     camera.mode = mode;
-    // The restart that follows is not an outage.
-    camera.offlineSince = Date.now();
+    // The restart that follows (2-3 s) stays under the offline delay.
     await this.publishStates(camera);
     await this.checkOnline(camera);
     this.requestWidgetRefresh();

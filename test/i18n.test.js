@@ -245,7 +245,7 @@ test('the documentation names every feature, trigger, action and widget', () => 
     ]) {
       has(item.label[lang], 'label');
     }
-    for (const key of ['image', 'motion', 'object', 'mode', 'online']) {
+    for (const key of ['image', 'motion', 'object', 'mode']) {
       has(NAMES[lang][key], 'name');
     }
     for (const field of manifest.config_schema.filter((item) => item.type !== 'section')) {

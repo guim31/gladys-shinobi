@@ -48,8 +48,8 @@ test('one device per monitor, with what Shinobi detects on it, without the sched
     ],
   );
   // Front door uses an object detector plugin, Garage no detector at all.
-  assert.deepEqual(featureKeys(devices[0]), ['image', 'motion', 'object', 'mode', 'online']);
-  assert.deepEqual(featureKeys(devices[1]), ['image', 'motion', 'mode', 'online']);
+  assert.deepEqual(featureKeys(devices[0]), ['image', 'motion', 'object', 'mode']);
+  assert.deepEqual(featureKeys(devices[1]), ['image', 'motion', 'mode']);
   const mode = devices[0].features.find((feature) => feature.type === 'select');
   assert.deepEqual(
     mode.supported_options.map((option) => [option.value, option.label]),
@@ -74,7 +74,7 @@ test('adding the devices publishes every state, the badge and an image', async (
   assert.equal(lastState(world, 'FrontDoor', 'motion'), 0);
   assert.equal(lastState(world, 'FrontDoor', 'object'), 0);
   assert.equal(lastState(world, 'Garage', 'motion'), 0);
-  assert.equal(lastState(world, 'FrontDoor', 'online'), 1);
+  assert.equal(world.hub.cameras.get('FrontDoor').online, true);
   const mode = world.fake.states.findLast(
     (state) => state.device_feature_external_id === idOf(world, 'Garage', 'mode'),
   );
@@ -175,7 +175,7 @@ test('an object seen on a monitor without the flag adds the feature', async (t) 
   await detect(world, 'Garage', OBJECTS);
   await world.hub.refresh();
   const garage = world.fake.discoveredDevices.find((device) => device.name === 'Garage');
-  assert.deepEqual(featureKeys(garage), ['image', 'motion', 'object', 'mode', 'online']);
+  assert.deepEqual(featureKeys(garage), ['image', 'motion', 'object', 'mode']);
 });
 
 test('the detections: regions, labels, scores, a detection without matrices', () => {
@@ -212,7 +212,7 @@ test('a monitor losing its stream: offline after the delay, the trigger, then ba
   await createAll(world);
   world.server.setStatus('Garage', 7, 'Died');
   await settle(world);
-  assert.equal(lastState(world, 'Garage', 'online'), 0);
+  assert.equal(world.hub.cameras.get('Garage').online, false);
   assert.deepEqual(
     events(world, TRIGGERS.OFFLINE).map((event) => event.data),
     [{ camera: idOf(world, 'Garage'), camera_name: 'Garage' }],
@@ -220,7 +220,7 @@ test('a monitor losing its stream: offline after the delay, the trigger, then ba
   assert.equal(world.fake.transports.at(-1).transport, 'unreachable');
   world.server.setStatus('Garage', 2, 'Watching');
   await settle(world);
-  assert.equal(lastState(world, 'Garage', 'online'), 1);
+  assert.equal(world.hub.cameras.get('Garage').online, true);
   assert.equal(world.fake.transports.at(-1).transport, 'local');
 });
 
@@ -235,7 +235,7 @@ test('a restart shorter than the delay is not an outage', async (t) => {
     world.server.emit(event);
   }
   await settle(world);
-  assert.equal(lastState(world, 'FrontDoor', 'online'), 1);
+  assert.equal(world.hub.cameras.get('FrontDoor').online, true);
   assert.deepEqual(events(world, TRIGGERS.OFFLINE), []);
 });
 
@@ -246,7 +246,7 @@ test('a monitor disabled in Shinobi is offline without alarm', async (t) => {
   world.server.setMode('Garage', 'stop');
   await world.hub.refresh();
   await settle(world);
-  assert.equal(lastState(world, 'Garage', 'online'), 0);
+  assert.equal(world.hub.cameras.get('Garage').online, false);
   assert.deepEqual(events(world, TRIGGERS.OFFLINE), []);
 });
 
@@ -264,12 +264,12 @@ test('Shinobi down: one lost answer is not an outage, two are; then back', async
   assert.equal(world.hub.server, 'unreachable');
   assert.equal(world.fake.connectionStatus.connected, false);
   assert.equal(events(world, TRIGGERS.OFFLINE).length, 2);
-  assert.equal(lastState(world, 'FrontDoor', 'online'), 0);
+  assert.equal(world.hub.cameras.get('FrontDoor').online, false);
   world.server.down = false;
   await world.hub.refresh();
   await settle(world);
   assert.deepEqual(world.fake.connectionStatus, { connected: true });
-  assert.equal(lastState(world, 'FrontDoor', 'online'), 1);
+  assert.equal(world.hub.cameras.get('FrontDoor').online, true);
   // The socket is open again and follows the monitors: live events flow.
   await wait(20);
   await settle(world);
@@ -294,14 +294,16 @@ test('the socket lost alone: detections back to none, then opened again', async 
   assert.equal(world.hub.live, true);
 });
 
-test('an older Shinobi (Engine.IO 3) is reached on the next try', async (t) => {
+test('an older Shinobi (Engine.IO 3): told by its open packet, the client pings', async (t) => {
   const server = new FakeShinobi();
-  server.eio = [3];
+  server.eio = 3;
   const world = await createWorld({ server });
   t.after(() => world.app.stop());
-  await wait(20);
-  await settle(world);
   assert.equal(world.hub.live, true);
+  const [socket] = server.sockets;
+  assert.ok(!socket.sent.includes('40'), 'the server joins the namespace itself');
+  assert.equal(world.hub.socket.eio, 3);
+  assert.ok(world.hub.socket.pingTimer, 'Engine.IO 3: the client pings');
   await createAll(world);
   await detect(world, 'Garage', FULL_FRAME_MOTION);
   assert.equal(events(world, TRIGGERS.MOTION).length, 1);
@@ -340,7 +342,7 @@ test('the mode list, the scene action: Shinobi switches the monitor', async (t) 
   assert.equal(world.server.monitor('Garage').mode, 'record');
   await settle(world);
   assert.equal(world.hub.cameras.get('Garage').mode, 'record');
-  assert.equal(lastState(world, 'Garage', 'online'), 1, 'the restart is not an outage');
+  assert.equal(world.hub.cameras.get('Garage').online, true, 'the restart is not an outage');
   ack = await world.fake.sceneAction('set_mode', { camera: device.external_id, mode: 'start' });
   assert.equal(ack.success, true, ack.error);
   assert.equal(world.server.monitor('Garage').mode, 'start');

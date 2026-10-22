@@ -58,11 +58,10 @@ Cada monitor de Shinobi se convierte en una cámara de Gladys, con el nombre de 
 | **Movimiento**       | 1 cuando el detector de movimiento de Shinobi acaba de ver movimiento, si no 0.  |
 | **Objeto detectado** | 1 cuando un plugin acaba de ver un objeto, si no 0. Si el monitor lo tiene.      |
 | **Modo**             | Solo vigilancia, Grabación, En reposo o Desactivada. Una lista: modificable.     |
-| **En línea**         | 1 cuando el monitor funciona y llega su flujo, si no 0.                          |
 
-Una cámara cuyo flujo se ha perdido aparece como inaccesible en Gladys. **Modo** es una lista a
-propósito, nunca un interruptor que un asistente de voz accionaría por error; **En línea** es de solo
-lectura. Una instantánea de Shinobi demasiado pesada se reduce en la integración para caber en Gladys
+Si llega el flujo se ve en el propio dispositivo: una cámara cuyo flujo se ha perdido aparece como
+inaccesible en Gladys (y dispara **Shinobi: cámara sin conexión**). **Modo** es una lista a propósito,
+nunca un interruptor que un asistente de voz accionaría por error. Una instantánea de Shinobi demasiado pesada se reduce en la integración para caber en Gladys
 (150 KB por imagen).
 
 ## Widget del panel
@@ -138,6 +137,8 @@ momento.
   comparan texto.
 - Desactivar una cámara se hace con la lista **Modo** o en Shinobi, no con una acción de escena.
 - Las grabaciones pasadas, el historial de eventos, el PTZ y los timelapses no están cubiertos.
+- Las detecciones en directo requieren un Shinobi reciente: la imagen de 2021 de Docker Hub no las
+  envía (los estados se leen entonces cada minuto).
 - Un grupo de Shinobi (una clave de grupo) por integración.
 - Desarrollada sin el hardware: sus comentarios son bienvenidos. Probada con la imagen oficial de
   Shinobi en Docker y una cámara simulada; los objetos se simularon mediante la propia API de

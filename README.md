@@ -24,7 +24,9 @@ with real cameras: tell us how it goes in the
     chosen delay without a new detection, since Shinobi never sends the end of
     one;
   - **Mode**, a list: watch only, record, idle, disabled;
-  - **Online**: the monitor runs and its stream comes in (read only).
+  - whether the stream comes in is the device's transport badge (unreachable
+    when lost), not a feature: the core's `camera/enabled` is the user's
+    private mode.
 - **Scene triggers**: "Shinobi: motion detected" (camera and region filters,
   confidence), "Shinobi: object detected" (camera and label filters,
   confidence), "Shinobi: camera offline". The image of the moment is sent to
@@ -89,7 +91,8 @@ The full guide: [English](docs/en.md), [français](docs/fr.md),
 - Not checked: real cameras and long-running use, a real object detection
   plugin (the object detections were sent through Shinobi's own
   `motion` API, which gives the same `detector_trigger`), an older Shinobi
-  (Engine.IO 3, no `detector_on`), Shinobi behind a reverse proxy, the
+  (the 2021 Docker Hub image speaks Engine.IO 3, handled, but has no
+  `detector_on`: no live detection there), Shinobi behind a reverse proxy, the
   multi-server (child node) setups.
 
 ## Limits

@@ -62,11 +62,10 @@ Jeder Shinobi-Monitor wird zu einer Gladys-Kamera, benannt wie in Shinobi, mit:
 | **Bewegung**       | 1, wenn der Bewegungsmelder von Shinobi gerade Bewegung gesehen hat, sonst 0.        |
 | **Objekt erkannt** | 1, wenn ein Plugin gerade ein Objekt gesehen hat, sonst 0. Falls der Monitor es hat. |
 | **Modus**          | Nur überwachen, Aufnahme, Leerlauf oder Deaktiviert. Eine Liste: änderbar.           |
-| **Online**         | 1, wenn der Monitor läuft und sein Stream ankommt, sonst 0.                          |
 
-Eine Kamera, deren Stream verloren ist, erscheint in Gladys als nicht erreichbar. **Modus** ist
-absichtlich eine Liste, nie ein Schalter, den ein Sprachassistent versehentlich umlegt; **Online** ist
-nur lesbar. Ein zu großer Shinobi-Schnappschuss wird in der Integration verkleinert, damit er in
+Ob der Stream ankommt, zeigt das Gerät selbst: Eine Kamera, deren Stream verloren ist, erscheint in
+Gladys als nicht erreichbar (und löst **Shinobi: Kamera offline** aus). **Modus** ist absichtlich eine
+Liste, nie ein Schalter, den ein Sprachassistent versehentlich umlegt. Ein zu großer Shinobi-Schnappschuss wird in der Integration verkleinert, damit er in
 Gladys passt (150 KB pro Bild).
 
 ## Dashboard-Widget
@@ -140,6 +139,8 @@ Die Aktion **Kameraaufnahme senden** von Gladys sendet das letzte Bild einer Kam
 - Eine Kamera deaktivierst du über die Liste **Modus** oder in Shinobi, nicht über eine
   Szenenaktion.
 - Vergangene Aufnahmen, Ereignisverlauf, PTZ und Zeitraffer sind nicht abgedeckt.
+- Live-Erkennungen brauchen ein aktuelles Shinobi: Das Image von 2021 auf Docker Hub sendet sie nicht
+  (die Zustände werden dann jede Minute gelesen).
 - Eine Shinobi-Gruppe (ein Gruppenschlüssel) pro Integration.
 - Ohne die Hardware entwickelt: Feedback willkommen. Getestet mit dem offiziellen Shinobi-Image in
   Docker und einer simulierten Kamera; die Objekte wurden über die eigene API von Shinobi simuliert,

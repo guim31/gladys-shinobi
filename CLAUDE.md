@@ -122,6 +122,13 @@ documentée : lire `libs/webServerPaths.js`, `libs/socketio.js`, `libs/events/ut
   mouvement, étiquette pour un objet, `confidence` 0-1 ou 0-100. **Aucun événement de fin** : état remis à 0
   après `motion_reset`. Le détecteur intégré n'émet rien si `detector_send_frames` est à 0, ni sous le seuil de
   sensibilité (10 % de l'image par défaut), ni quand la détection d'objets est active sans plugin connecté.
+- **`camera/enabled` n'est pas « en ligne »** (relevé par la relecture, 22/10) : dans le cœur 5.2
+  (`docs/specs/camera-enable-disable.md`), c'est le **mode privé** de l'utilisateur ; à 0, le cœur refuse les
+  images (`getImage`, chat, MCP, « Envoyer une image de caméra ») et `publishCameraImage` répond 404. Le type
+  n'existe pas non plus avant 5.2.0. L'arrivée du flux passe par le badge `publishTransports` et le déclencheur
+  `camera_offline`. **gladys-viseron et gladys-agentdvr publient `camera/enabled` en lecture seule** : à revoir.
+- Engine.IO 3 (Shinobi de 2021, Socket.IO 2.4.1) : le serveur ignore `EIO=4`, répond `0{…}` **sans `maxPayload`**,
+  rejoint lui-même l'espace de noms et attend les pings du client ; ce Shinobi n'a pas `detector_on`.
 - Détections d'objets testées **sans plugin**, par `GET <key>/motion/<ke>/<mid>?data=…` (même `detector_trigger`,
   exige `detector_http_api` ≠ 0).
 

@@ -19,7 +19,7 @@ the notes of the version's GitHub Release.
   container when too heavy for Gladys; "Motion" (Shinobi's built-in detector)
   and "Object detected" (object detection plugins), back to none after a
   chosen delay without a new detection; "Mode", a list (watch only, record,
-  idle, disabled) the dashboard can change; "Online" (read only).
+  idle, disabled) the dashboard can change.
 - Live detections and monitor status through Shinobi's Socket.IO, reopened
   after a loss; the monitor list read every minute.
 - Monitors whose stream is lost show as unreachable in Gladys.
