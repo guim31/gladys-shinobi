@@ -31,16 +31,22 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
+index.js                          SDK wiring only (src/app.js registers the handlers)
+src/app.js                        every SDK handler, wired to the hub; returns it (tests)
+src/hub.js                        the Shinobi hub: monitors, states, detections, images, mode
+src/shinobi/client.js             REST client (API key and group key in the path)
+src/shinobi/socket.js             Socket.IO by hand over a WebSocket (Engine.IO 4, then 3)
+src/devices.js                    a monitor as a Gladys camera (features, names, ids)
+src/image.js, image-worker.js,    a snapshot made to fit Gladys (150 KB): scaled decode,
+src/jpeg-scaled.js                shrink, jpeg-js encode, in a worker (from gladys-ezviz)
 src/scenes.js                     scene action handlers (manifest `scene_actions`)
 src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/texts.js                      connection status and "Check the connection" texts
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+docs/en.md, fr.md, de.md, es.md   user documentation, re-hosted by Gladys (mandatory)
+test/                             node --test, against the SDK's fake Gladys and a fake Shinobi
+test/fixtures/shinobi/            answers recorded from a real Shinobi (see below)
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,10 +76,54 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** is in four languages (English, French, German with
+  "du", Spanish with "usted"): action messages, widget texts, feature names,
+  manifest texts, and `docs/en.md`, `fr.md`, `de.md`, `es.md` with the same
+  sections. `test/i18n.test.js` checks them.
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
+
+## Shinobi : API et pièges (22/10/2026)
+
+Vérifié contre un vrai serveur en Docker : `registry.gitlab.com/shinobi-systems/shinobi:dev` (code du 20/10/2026,
+`ca152d3`, MariaDB intégrée, Socket.IO 4.8), réseau `gladys-test-shinobi`, port 8080 non publié ; caméra RTSP servie
+par `bluenviron/mediamtx`, alimentée par `ffmpeg` (mire `color` + carré qui bouge 6 s sur 40, ré-encodée en H.264).
+L'image Docker Hub `shinobisystems/shinobi` date de 2021 : prendre celle de GitLab. Le superutilisateur par défaut
+(`admin@shinobi.video` / `admin`, `POST /super?json=true` avec `function: "super"`) crée le compte
+(`/super/<sessionKey>/accounts/registerAdmin`), puis `POST /?json=true` donne `auth_token`, `ke`, `uid` ; une clé
+d'API se crée par `POST /<auth>/api/<ke>/add`, un moniteur par `POST /<auth>/configureMonitor/<ke>/<mid>` (partir
+de `test/testMonitor-WatchOnly.json` de l'image : un moniteur incomplet fait planter ffmpeg). L'API n'est guère
+documentée : lire `libs/webServerPaths.js`, `libs/socketio.js`, `libs/events/utils.js` **de l'image testée**.
+
+- **Clé refusée = HTTP 200** `{ ok: false, msg: "Not Authorized" }` (mauvaise clé, mauvais groupe, permission
+  manquante) : lire le corps, pas le statut. Moniteur inconnu : « Monitor or Key does not exist. » ; mode déjà
+  actif : `ok: false` « Monitor mode is already : … » (pas une erreur). La clé est **dans le chemin** de chaque
+  URL : ne jamais journaliser une URL (`send(route, rest, what)` ne logue que `what`).
+- **Liste** `<key>/monitor/<ke>` : `mid`, `name`, `mode` (`start` = surveillance seule, `record`, `idle`, `stop`),
+  `status` et **`code`** (1 Starting, 2 Watching, 3 Recording, 4 Restarting, 5 Stopped, 6 Idle, 7 Died, 8
+  Stopping, 9 Started), `details` dont les drapeaux valent `"1"` **ou** `1` selon la version (comparer en
+  chaîne) : `snap` (API JPEG), `detector`, `detector_use_detect_object`.
+- **Image** `<key>/jpeg/<ke>/<mid>/s.jpg` : le fichier que ffmpeg écrit si l'API JPEG est active ; sinon (ou
+  moniteur inconnu) Shinobi renvoie **son image de remplacement en 200** : se fier à `details.snap`. Aucun
+  paramètre de taille (`/icon/` sert le même fichier) : la réduction se fait dans le conteneur (`src/image.js`).
+- **Mode** `<key>/monitor/<ke>/<mid>/<mode>` : arrête puis redémarre le moniteur (`monitor_status` 5, 1, puis
+  2 ou 3 en 2-3 s). La variante temporisée (`…/record/10`) ne revient **pas** au mode précédent sur cette
+  version : non utilisée. Shinobi redémarre aussi lui-même un moniteur qu'il croit muet (« Camera is not
+  streaming », code 4) : d'où le délai de 30 s avant « hors ligne », et la relecture de la liste à chaque
+  statut non diffusant (seule la liste dit si c'est un arrêt voulu, `mode: stop`).
+- **Socket.IO** (`/socket.io/?EIO=4&transport=websocket`) : `0{…}` → `40` → `40{sid}` →
+  `42["f",{f:"init",auth,ke,uid}]` → `init_success`, ou `{ok:false,msg}` puis fermeture. Une clé d'API ne passe
+  qu'avec la permission **`auth_socket`** (« Can Authenticate Websocket ») ; le `uid` vient de
+  `<key>/userInfo/<ke>`. Les détections ne vont qu'au salon `DETECTOR_<ke><mid>` : `detector_on` par moniteur
+  (récent ; `watch_on` existe aussi mais fait pousser le flux). `monitor_status` va à tout le groupe. Shinobi
+  envoie aussi `42["ping",{beat}]` toutes les ~8 s (répondre `pong`), le serveur Engine.IO `2` (répondre `3`).
+- **`detector_trigger`** : `details.reason` (`motion` ou `object`), `name` (`multipleRegions` quand les régions
+  sont fusionnées), `confidence`, `matrices[]` avec `tag` = nom de région (`FULL_FRAME` sans région) pour le
+  mouvement, étiquette pour un objet, `confidence` 0-1 ou 0-100. **Aucun événement de fin** : état remis à 0
+  après `motion_reset`. Le détecteur intégré n'émet rien si `detector_send_frames` est à 0, ni sous le seuil de
+  sensibilité (10 % de l'image par défaut), ni quand la détection d'objets est active sans plugin connecté.
+- Détections d'objets testées **sans plugin**, par `GET <key>/motion/<ke>/<mid>?data=…` (même `detector_trigger`,
+  exige `detector_http_api` ≠ 0).
 
 ---
 

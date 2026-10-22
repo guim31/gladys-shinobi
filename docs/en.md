@@ -1,61 +1,135 @@
-# Demo Devices Template
+# Shinobi
 
-This is the user documentation of the integration. Gladys re-hosts this file
-and shows a permanent **Documentation** link to it in the Configuration screen
-(in the user's language, with English as the fallback) — it is when
-configuring that the user needs it most. Keep the short onboarding hints in
-the `section` blocks of the manifest `config_schema`; put the long
-step-by-step (screenshots, troubleshooting…) here.
+Brings the cameras of a [Shinobi](https://shinobi.video/) server (the self-hosted network video
+recorder) into Gladys: their image, the motion Shinobi detects, the objects seen by an object
+detection plugin, their mode (watch only, record, disabled), and whether they are online. Shinobi's
+live detections start scenes, with the image of the moment, which a scene can send you. Scenes can
+also put a camera to record, or back to watch only.
 
-## What you get
+Tested against a real Shinobi server in Docker (the official image of October 2026) with a simulated
+network camera and Shinobi's built-in motion detector, not yet on an installation in service with
+real cameras, nor with an object detection plugin: feedback welcome on
+[GitHub](https://github.com/guim31/gladys-shinobi/issues) or on the Gladys forum.
 
-Six demo devices show up after installation: a weather station (real data
-from Open-Meteo), a switch, a dimmable light, a smart plug with power
-metering, a motion sensor and a camera.
+## What you need
 
-## Configuration
+- Gladys 5.1 or later.
+- Shinobi, reachable from Gladys on its web port (8080 by default). An up-to-date Shinobi is best:
+  live detections were tested on the Shinobi of October 2026.
+- The cameras (monitors) already added in Shinobi, with:
+  - the **JPEG API** on (monitor settings, JPEG API section): Gladys reads the images there;
+  - the **detector** on, with Shinobi's built-in motion detection, for **Motion**;
+  - an object detection plugin (Tensorflow, YOLO, DeepStack…) connected to Shinobi and object
+    detection on for the monitor, for **Object detected**. Shinobi's built-in detector only sees
+    motion.
+- An **API key** of your Shinobi account. In Shinobi, click your user name (top left), then **API**,
+  and add a key: IP `0.0.0.0` (or the address of Gladys), with the permissions to see and control
+  monitors, see snapshots, and **Can Authenticate Websocket** (live detections).
+- The **group key** of your account: in Shinobi, your user name, then **Settings** (Group Key).
 
-1. Open the **Configuration** tab of the integration.
-2. Set the **latitude** and **longitude** the demo weather station should
-   observe (they default to Paris), and pick your temperature unit.
-   The **refresh interval** sets how often the weather station and the
-   plug's power are read: every 5 minutes by default, every minute at most.
-3. Save: the devices appear in the **Discovery** tab, ready to be added.
+## Installation
 
-The **Prefer the local connection** toggle drives the demo plug: it reports
-the channel it actually uses as a badge (local or cloud), with an orange dot
-when it runs degraded (local refused, cloud fallback).
+1. In Gladys, open **Integrations**, find **Shinobi** and install it.
+2. In its **Configuration** tab, fill in:
+   - **Shinobi address**: the address of the computer running Shinobi, e.g. `192.168.1.20`. Without a
+     port, 8080 is used; add `:port` if it was changed, or `https://` behind a reverse proxy.
+   - **API key** and **Group key**: as above.
+   - **Image refresh**: how often each camera image is sent to Gladys (from 10 seconds to 15 minutes,
+     1 minute by default). A detection also sends one at once.
+   - **End of a detection**: Shinobi sends each detection, never its end. **Motion** and **Object
+     detected** go back to 0 after this delay without a new detection (30 seconds by default). The
+     triggers follow the same delay: a detection fires a scene again once this delay has passed.
+   - **Language of the names**: the language of the feature names given when a camera is added.
+3. Save, then open the **Discovery** tab: one device per camera. Add the ones you want.
+4. **Check the connection** shows what the integration reads: whether live detections are received,
+   each camera, its mode, whether it is online, and what is missing (JPEG API off, no detector).
 
-## Actions
+## The Gladys devices
 
-- **Test the weather provider** — performs a live request to Open-Meteo and
-  shows the current temperature and humidity under the button.
-- **Identify a device** — pick one of your devices in the list and it will
-  signal itself (the demo light "blinks" in the logs).
+Each Shinobi monitor becomes a Gladys camera, named as in Shinobi, with:
+
+| Feature             | What it is                                                                         |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| **Image**           | The camera image, sent at the chosen pace and at once on a detection.              |
+| **Motion**          | 1 when Shinobi's motion detector saw motion a moment ago, else 0.                  |
+| **Object detected** | 1 when an object plugin saw an object a moment ago, else 0. If the monitor has it. |
+| **Mode**            | Watch only, Record, Idle or Disabled. A list: the dashboard can change it.         |
+| **Online**          | 1 when the monitor runs and its stream comes in, else 0.                           |
+
+A camera whose stream is lost shows as unreachable in Gladys. **Mode** is a list on purpose, never a
+switch a voice assistant would flip by mistake; **Online** is read only. A large Shinobi snapshot is
+made smaller in the integration to fit Gladys (150 KB per image).
+
+## Dashboard widget
+
+**Shinobi camera** shows the image of a camera, motion, the objects seen a moment ago (e.g.
+"person, car"), the mode and online, and two buttons: **Record** (or **Watch only** while it
+records) and **New image**.
 
 ## Scenes
 
-The integration adds its own cards to the scene editor (Gladys 5.1 or
-later), under the **Integrations** category:
+### Triggers
 
-- **Motion detected** (trigger) — starts the scene when a demo motion sensor
-  sees something move. Optionally pick the sensor and what moved (person,
-  animal); left empty, any detection matches. The following actions can
-  read what moved with `{{triggerEvent.data.target}}`.
-- **Identify a device** (action) — makes the chosen device signal itself.
-  It returns whether the device could signal itself, so the following
-  actions can depend on it.
+- **Shinobi: motion detected**: Shinobi's motion detector sees motion on a camera. Filters: the
+  camera (empty = all) and the region (a region name drawn in Shinobi, empty = all). Variables: the
+  camera name, the region (empty for the whole image) and the confidence in % (the share of the image
+  that changed). The image of the moment is sent to Gladys first.
+- **Shinobi: object detected**: an object detection plugin sees an object. Filters: the camera and
+  the object (label, as the plugin names it: `person`, `car`, `dog`…). Variables: the camera name,
+  the object and the confidence in %. One event per object seen.
+- **Shinobi: camera offline**: a camera watching or recording loses its stream for 30 seconds, or
+  Shinobi itself stops answering. Not fired for a camera disabled or idle in Shinobi, nor for the
+  restart that follows a mode change.
 
-## Dashboard
+### Actions
 
-Add the **Demo status** widget to a dashboard: it shows the live
-temperature of the weather station and the power of the office plug, the
-connection the plug currently uses (orange when degraded) and the observed
-location. Its **Identify the light** button makes the demo light signal
-itself.
+- **Shinobi: record or watch only**: **Record** puts a camera to continuous recording, **Watch only**
+  puts it back to watch only (Shinobi keeps recording on detections if the monitor is set to). The API
+  key needs the permission to control monitors.
+
+The core's **Send a camera image** action sends the last image of a camera: right after **Shinobi:
+motion detected** or **Shinobi: object detected**, it is the image of that moment.
+
+### Scene ideas
+
+- **Someone at the door**: **Shinobi: object detected**, camera "Entrance", object `person` → **Send
+  a camera image** of that camera to your phone, with `{{triggerEvent.data.score}}` % in the text.
+- **Motion in the driveway at night**: **Shinobi: motion detected**, region `driveway` → switch the
+  outdoor light on for five minutes.
+- **Record while away**: everybody leaves home → **Shinobi: record or watch only**, Record, on the
+  hall camera; Watch only when someone is back.
+- **Camera lost**: **Shinobi: camera offline** → send a message with the camera name.
 
 ## Troubleshooting
 
-The integration logs everything it does: check the integration logs from the
-Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
-detail.
+- **"Shinobi does not answer at this address"**: open `http://<address>:8080` in a browser. Check
+  the port and that no firewall blocks Gladys.
+- **"Something answers, but not like Shinobi"**: the address or the port leads to another service.
+  Enter the address of Shinobi, without a page path (a path is kept behind a reverse proxy).
+- **"Shinobi refuses the API key or the group key"**: copy both again from Shinobi; check the IP
+  allowed for the key (`0.0.0.0` for any).
+- **"No live detections: give the API key the permission Can Authenticate Websocket"**: edit the key
+  in Shinobi (user name → API). Without it, the states are read once a minute and no detection
+  reaches Gladys.
+- **"JPEG API off"**: turn the JPEG API on in the monitor settings; without it Shinobi only has a
+  placeholder image.
+- **Motion stays at 0**: the detector of the monitor is off, or its sensitivity too high for what
+  moves (Shinobi's detector settings). Shinobi's own event list shows whether it detects.
+- **A reverse proxy**: it must let WebSockets through on `/socket.io/`.
+- **More details**: the integration logs (Integrations → Shinobi → Logs); set `LOG_LEVEL` to `debug`
+  to see each request (never with the key).
+
+## Limits
+
+- No live video: Gladys shows images, sent at the chosen pace (Gladys keeps 12 images a minute per
+  camera at most). The live stream and recordings are watched in Shinobi.
+- Shinobi sends detections, not their end: **Motion** and **Object detected** stay on for the chosen
+  delay after the last one.
+- Regions and labels are filtered as written in Shinobi: the scene filters only compare text.
+- Disabling a camera is done from the **Mode** list or in Shinobi, not by a scene action.
+- Past recordings, events history, PTZ and timelapses are not covered.
+- One Shinobi group (one group key) per integration.
+- Developed without the hardware: feedback welcome. Tested with the official Shinobi image in Docker
+  and a simulated camera; the objects were simulated through Shinobi's own API, without a plugin.
+
+This integration is not affiliated with Shinobi Systems.

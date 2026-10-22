@@ -30,6 +30,16 @@ Gladys before reporting a problem.
 
 In scope: the code of this repository and the Docker image it publishes.
 
+The integration stores nothing under `/data`. The Shinobi API key and group
+key are kept by Gladys in the integration configuration; the container holds
+them in memory only. Shinobi takes the API key in the path of every request,
+so it sends them only to the Shinobi address of the configuration, and never
+writes a request address, the key or the group key in a log line or a message.
+Over plain HTTP they travel in clear text: put Shinobi behind HTTPS if the
+network between Gladys and Shinobi is not trusted. Give the key only the
+permissions it needs (see the documentation), and restrict its IP to the
+address of Gladys when you can. The integration opens no port.
+
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
-and the third-party services and devices the integration talks to.
+and Shinobi and the cameras it records.
