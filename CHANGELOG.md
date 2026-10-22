@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-22
+
 ### Added
 
 - Shinobi servers, reached at the address of the configuration (port 8080 by
@@ -28,3 +30,6 @@ the notes of the version's GitHub Release.
   filters; label and confidence as variables) and "Shinobi: camera offline";
   scene action "Shinobi: record or watch only"; dashboard widget "Shinobi
   camera"; action "Check the connection".
+
+[Unreleased]: https://github.com/guim31/gladys-shinobi/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-shinobi/releases/tag/v1.0.0
