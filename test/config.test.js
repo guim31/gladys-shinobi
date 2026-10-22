@@ -1,33 +1,59 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeConfig, DEFAULT_CONFIG } from '../src/config.js';
+import { connectionKey, normalizeConfig } from '../src/config.js';
+import { parseServerUrl } from '../src/shinobi/client.js';
 
-test('normalizeConfig returns the defaults when called with no argument', () => {
-  assert.deepEqual(normalizeConfig(), DEFAULT_CONFIG);
+test('the defaults: incomplete, an image a minute, 30 s for a detection, French names', () => {
+  const config = normalizeConfig({});
+  assert.deepEqual(config, {
+    url: '',
+    validUrl: false,
+    apiKey: '',
+    groupKey: '',
+    complete: false,
+    snapshotSeconds: 60,
+    motionResetSeconds: 30,
+    language: 'fr',
+  });
 });
 
-test('normalizeConfig keeps user values over the defaults', () => {
-  const config = normalizeConfig({ latitude: 45.5, longitude: -73.6, unit: 'fahrenheit' });
-  assert.equal(config.latitude, 45.5);
-  assert.equal(config.longitude, -73.6);
-  assert.equal(config.unit, 'fahrenheit');
+test('values outside the lists fall back to the defaults; blanks are trimmed', () => {
+  const config = normalizeConfig({
+    url: ' 192.0.2.10 ',
+    api_key: ' key ',
+    group_key: ' group ',
+    snapshot_interval: 'often',
+    motion_reset: '7',
+    language: 'it',
+  });
+  assert.equal(config.url, '192.0.2.10');
+  assert.equal(config.complete, true);
+  assert.deepEqual([config.apiKey, config.groupKey], ['key', 'group']);
+  assert.equal(config.snapshotSeconds, 60);
+  assert.equal(config.motionResetSeconds, 30);
+  assert.equal(config.language, 'fr');
+  assert.equal(normalizeConfig({ snapshot_interval: '10' }).snapshotSeconds, 10);
+  assert.equal(normalizeConfig({ motion_reset: '120' }).motionResetSeconds, 120);
+  assert.equal(normalizeConfig({ url: '192.0.2.10', group_key: 'g' }).complete, false);
 });
 
-test('normalizeConfig coerces numeric strings coming from a form', () => {
-  const config = normalizeConfig({ latitude: '48.8', longitude: '2.3', poll_frequency: '600' });
-  assert.equal(config.latitude, 48.8);
-  assert.equal(config.longitude, 2.3);
-  assert.equal(config.poll_frequency, 600);
-  assert.equal(typeof config.poll_frequency, 'number');
+test('a new key is a new connection, a new interval is not', () => {
+  const base = normalizeConfig({ url: '192.0.2.10', api_key: 'a', group_key: 'g' });
+  assert.notEqual(connectionKey(base), connectionKey({ ...base, apiKey: 'b' }));
+  assert.notEqual(connectionKey(base), connectionKey({ ...base, groupKey: 'h' }));
+  assert.equal(connectionKey(base), connectionKey({ ...base, snapshotSeconds: 10 }));
 });
 
-test('normalizeConfig falls back to the default for a missing numeric field', () => {
-  const config = normalizeConfig({ unit: 'celsius' });
-  assert.equal(config.poll_frequency, DEFAULT_CONFIG.poll_frequency);
-});
-
-test('GLADYS_PREFER_LOCAL defaults to true and only an explicit false disables it', () => {
-  assert.equal(normalizeConfig().GLADYS_PREFER_LOCAL, true);
-  assert.equal(normalizeConfig({ GLADYS_PREFER_LOCAL: true }).GLADYS_PREFER_LOCAL, true);
-  assert.equal(normalizeConfig({ GLADYS_PREFER_LOCAL: false }).GLADYS_PREFER_LOCAL, false);
+test('the address: port 8080 by default, a path kept, no credentials', () => {
+  assert.deepEqual(parseServerUrl('192.0.2.10'), {
+    origin: 'http://192.0.2.10:8080',
+    basePath: '',
+  });
+  assert.deepEqual(parseServerUrl('https://nvr.example/shinobi/'), {
+    origin: 'https://nvr.example',
+    basePath: '/shinobi',
+  });
+  assert.equal(parseServerUrl('http://user:pass@192.0.2.10'), null);
+  assert.equal(parseServerUrl('ftp://192.0.2.10'), null);
+  assert.equal(parseServerUrl(''), null);
 });

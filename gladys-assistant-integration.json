@@ -1,177 +1,628 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Shinobi",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Shinobi cameras: images, motion, objects detected, mode (watch only, record), from your NVR.",
+    "fr": "Caméras Shinobi : images, mouvement, objets détectés, mode (surveillance, enregistrement), en local.",
+    "de": "Shinobi-Kameras: Bilder, Bewegung, erkannte Objekte, Modus (überwachen, aufnehmen), lokal.",
+    "es": "Cámaras Shinobi: imágenes, movimiento, objetos detectados, modo (vigilancia, grabación), en local."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-shinobi:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-shinobi/main/cover.png",
+  "categories": ["security"],
+  "transports": ["local"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Your Shinobi server",
+        "fr": "Votre serveur Shinobi",
+        "de": "Dein Shinobi-Server",
+        "es": "Su servidor Shinobi"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Shinobi, the self-hosted video recorder. Create an API key in Shinobi (your user name, then API), enter it with the group key, then open the Discovery tab: one device per camera.",
+        "fr": "Shinobi, l'enregistreur vidéo auto-hébergé. Créez une clé d'API dans Shinobi (votre nom d'utilisateur, puis API), saisissez-la avec la clé de groupe, puis ouvrez l'onglet Découverte : un appareil par caméra.",
+        "de": "Shinobi, der selbst gehostete Videorekorder. Erstelle in Shinobi einen API-Schlüssel (dein Benutzername, dann API), gib ihn mit dem Gruppenschlüssel ein und öffne dann den Tab „Entdecken“: ein Gerät pro Kamera.",
+        "es": "Shinobi, el grabador de vídeo autoalojado. Cree una clave de API en Shinobi (su nombre de usuario y luego API), introdúzcala con la clave de grupo y abra la pestaña Descubrir: un dispositivo por cámara."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://github.com/guim31/gladys-shinobi/blob/main/docs/en.md",
+          "label": {
+            "en": "Setup guide",
+            "fr": "Guide d'installation",
+            "de": "Installationsanleitung",
+            "es": "Guía de instalación"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "url",
+      "type": "string",
+      "label": {
+        "en": "Shinobi address",
+        "fr": "Adresse de Shinobi",
+        "de": "Shinobi-Adresse",
+        "es": "Dirección de Shinobi"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
+      "description": {
+        "en": "Without a port, 8080 is used. Add https:// for a reverse proxy.",
+        "fr": "Sans port, 8080 est utilisé. Ajoutez https:// derrière un proxy inverse.",
+        "de": "Ohne Port wird 8080 verwendet. Füge https:// hinter einem Reverse-Proxy hinzu.",
+        "es": "Sin puerto, se usa el 8080. Añada https:// detrás de un proxy inverso."
+      },
+      "placeholder": {
+        "en": "e.g. 192.168.1.20",
+        "fr": "ex. 192.168.1.20",
+        "de": "z. B. 192.168.1.20",
+        "es": "p. ej. 192.168.1.20"
+      },
       "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "default": ""
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+      "key": "api_key",
+      "type": "secret",
+      "label": {
+        "en": "API key",
+        "fr": "Clé d'API",
+        "de": "API-Schlüssel",
+        "es": "Clave de API"
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "description": {
+        "en": "Give it the permissions to see and control monitors, see snapshots, and \"Can Authenticate Websocket\" for live detections.",
+        "fr": "Donnez-lui les permissions de voir et contrôler les caméras, voir les instantanés, et « Can Authenticate Websocket » pour les détections en direct.",
+        "de": "Gib ihm die Berechtigungen, Kameras zu sehen und zu steuern, Schnappschüsse zu sehen, und „Can Authenticate Websocket“ für Live-Erkennungen.",
+        "es": "Dele los permisos para ver y controlar las cámaras, ver las instantáneas, y «Can Authenticate Websocket» para las detecciones en directo."
+      },
+      "required": true
     },
     {
-      "key": "unit",
+      "key": "group_key",
+      "type": "string",
+      "label": {
+        "en": "Group key",
+        "fr": "Clé de groupe",
+        "de": "Gruppenschlüssel",
+        "es": "Clave de grupo"
+      },
+      "description": {
+        "en": "Shown in Shinobi under your user name, then Settings (Group Key).",
+        "fr": "Visible dans Shinobi sous votre nom d'utilisateur, puis Paramètres (Group Key).",
+        "de": "In Shinobi unter deinem Benutzernamen, dann Einstellungen (Group Key) zu sehen.",
+        "es": "Visible en Shinobi bajo su nombre de usuario y luego Ajustes (Group Key)."
+      },
+      "required": true,
+      "default": ""
+    },
+    {
+      "key": "snapshot_interval",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "label": {
+        "en": "Image refresh",
+        "fr": "Rafraîchissement des images",
+        "de": "Bildaktualisierung",
+        "es": "Actualización de imágenes"
+      },
+      "description": {
+        "en": "How often each camera image is sent to Gladys. A detection also sends one at once.",
+        "fr": "Fréquence d'envoi de l'image de chaque caméra à Gladys. Une détection en envoie aussi une aussitôt.",
+        "de": "Wie oft das Bild jeder Kamera an Gladys gesendet wird. Eine Erkennung sendet sofort eines.",
+        "es": "Con qué frecuencia se envía la imagen de cada cámara a Gladys. Una detección también envía una al instante."
+      },
       "required": false,
-      "default": "celsius",
+      "default": "60",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "10",
+          "label": {
+            "en": "10 seconds",
+            "fr": "10 secondes",
+            "de": "10 Sekunden",
+            "es": "10 segundos"
+          }
+        },
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "1 minute",
+            "fr": "1 minute",
+            "de": "1 Minute",
+            "es": "1 minuto"
+          }
+        },
+        {
+          "value": "300",
+          "label": {
+            "en": "5 minutes",
+            "fr": "5 minutes",
+            "de": "5 Minuten",
+            "es": "5 minutos"
+          }
+        },
+        {
+          "value": "900",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "motion_reset",
+      "type": "select",
+      "label": {
+        "en": "End of a detection",
+        "fr": "Fin d'une détection",
+        "de": "Ende einer Erkennung",
+        "es": "Fin de una detección"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Shinobi sends each detection, never its end: motion goes back to none after this delay without a new one.",
+        "fr": "Shinobi envoie chaque détection, jamais sa fin : le mouvement repasse à aucun après ce délai sans nouvelle détection.",
+        "de": "Shinobi sendet jede Erkennung, nie ihr Ende: Die Bewegung geht nach dieser Zeit ohne neue Erkennung auf keine zurück.",
+        "es": "Shinobi envía cada detección, nunca su fin: el movimiento vuelve a ninguno tras este plazo sin una nueva."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": "30",
+      "options": [
+        {
+          "value": "10",
+          "label": {
+            "en": "10 seconds",
+            "fr": "10 secondes",
+            "de": "10 Sekunden",
+            "es": "10 segundos"
+          }
+        },
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "1 minute",
+            "fr": "1 minute",
+            "de": "1 Minute",
+            "es": "1 minuto"
+          }
+        },
+        {
+          "value": "120",
+          "label": {
+            "en": "2 minutes",
+            "fr": "2 minutes",
+            "de": "2 Minuten",
+            "es": "2 minutos"
+          }
+        },
+        {
+          "value": "300",
+          "label": {
+            "en": "5 minutes",
+            "fr": "5 minutes",
+            "de": "5 Minuten",
+            "es": "5 minutos"
+          }
+        }
+      ]
+    },
+    {
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of the names",
+        "fr": "Langue des noms",
+        "de": "Sprache der Namen",
+        "es": "Idioma de los nombres"
+      },
+      "description": {
+        "en": "Names given to the features when a camera is added (Motion, Mode…).",
+        "fr": "Noms donnés aux fonctionnalités à l'ajout d'une caméra (Mouvement, Mode…).",
+        "de": "Namen, die den Funktionen beim Hinzufügen einer Kamera gegeben werden (Bewegung, Modus…).",
+        "es": "Nombres dados a las funciones al añadir una cámara (Movimiento, Modo…)."
+      },
+      "required": false,
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
+      "key": "check",
+      "label": {
+        "en": "Check the connection",
+        "fr": "Vérifier la connexion",
+        "de": "Verbindung prüfen",
+        "es": "Comprobar la conexión"
+      },
+      "description": {
+        "en": "Reads Shinobi again and lists its cameras, their mode, whether they are online, and whether live detections come.",
+        "fr": "Relit Shinobi et liste ses caméras, leur mode, si elles sont en ligne, et si les détections arrivent en direct.",
+        "de": "Liest Shinobi erneut und listet seine Kameras auf, ihren Modus, ob sie online sind und ob Live-Erkennungen ankommen.",
+        "es": "Vuelve a leer Shinobi y enumera sus cámaras, su modo, si están en línea y si llegan detecciones en directo."
+      },
+      "timeout_seconds": 60
     }
   ],
   "scene_triggers": [
     {
       "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "label": {
+        "en": "Shinobi: motion detected",
+        "fr": "Shinobi : mouvement détecté",
+        "de": "Shinobi: Bewegung erkannt",
+        "es": "Shinobi: movimiento detectado"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "Shinobi's motion detector sees motion on a camera, in the whole image or a region. The image is sent at once.",
+        "fr": "Le détecteur de mouvement de Shinobi voit du mouvement sur une caméra, dans toute l'image ou une région. L'image est envoyée aussitôt.",
+        "de": "Der Bewegungsmelder von Shinobi sieht Bewegung auf einer Kamera, im ganzen Bild oder in einer Region. Das Bild wird sofort gesendet.",
+        "es": "El detector de movimiento de Shinobi ve movimiento en una cámara, en toda la imagen o en una región. La imagen se envía al instante."
       },
       "fields": [
         {
-          "key": "device",
+          "key": "camera",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra",
+            "de": "Kamera",
+            "es": "Cámara"
+          },
+          "required": false,
+          "description": {
+            "en": "Leave empty for every camera.",
+            "fr": "Laisser vide pour toutes les caméras.",
+            "de": "Leer lassen für alle Kameras.",
+            "es": "Déjelo vacío para todas las cámaras."
+          }
         },
         {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
+          "key": "region",
+          "type": "string",
+          "label": {
+            "en": "Region",
+            "fr": "Région",
+            "de": "Region",
+            "es": "Región"
+          },
+          "required": false,
+          "description": {
+            "en": "A region name of the camera in Shinobi. Leave empty for any.",
+            "fr": "Un nom de région de la caméra dans Shinobi. Laisser vide pour toutes.",
+            "de": "Ein Regionsname der Kamera in Shinobi. Leer lassen für alle.",
+            "es": "Un nombre de región de la cámara en Shinobi. Déjelo vacío para todas."
+          }
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "camera_name",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Camera name",
+            "fr": "Nom de la caméra",
+            "de": "Kameraname",
+            "es": "Nombre de la cámara"
+          }
+        },
+        {
+          "key": "region",
+          "type": "string",
+          "label": {
+            "en": "Region",
+            "fr": "Région",
+            "de": "Region",
+            "es": "Región"
+          }
+        },
+        {
+          "key": "score",
+          "type": "number",
+          "label": {
+            "en": "Confidence (%)",
+            "fr": "Confiance (%)",
+            "de": "Konfidenz (%)",
+            "es": "Confianza (%)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "object_detected",
+      "label": {
+        "en": "Shinobi: object detected",
+        "fr": "Shinobi : objet détecté",
+        "de": "Shinobi: Objekt erkannt",
+        "es": "Shinobi: objeto detectado"
+      },
+      "description": {
+        "en": "An object detector plugin of Shinobi sees an object (person, car…) on a camera. The image is sent at once.",
+        "fr": "Un plugin de détection d'objets de Shinobi voit un objet (personne, voiture…) sur une caméra. L'image est envoyée aussitôt.",
+        "de": "Ein Objekterkennungs-Plugin von Shinobi sieht ein Objekt (Person, Auto…) auf einer Kamera. Das Bild wird sofort gesendet.",
+        "es": "Un plugin de detección de objetos de Shinobi ve un objeto (persona, coche…) en una cámara. La imagen se envía al instante."
+      },
+      "fields": [
+        {
+          "key": "camera",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra",
+            "de": "Kamera",
+            "es": "Cámara"
+          },
+          "required": false,
+          "description": {
+            "en": "Leave empty for every camera.",
+            "fr": "Laisser vide pour toutes les caméras.",
+            "de": "Leer lassen für alle Kameras.",
+            "es": "Déjelo vacío para todas las cámaras."
+          }
+        },
+        {
+          "key": "label",
+          "type": "string",
+          "label": {
+            "en": "Object (label)",
+            "fr": "Objet (étiquette)",
+            "de": "Objekt (Label)",
+            "es": "Objeto (etiqueta)"
+          },
+          "required": false,
+          "description": {
+            "en": "As the plugin names it, in English and lower case: person, car, dog… Leave empty for any.",
+            "fr": "Comme le plugin le nomme, en anglais et en minuscules : person, car, dog… Laisser vide pour tous.",
+            "de": "Wie das Plugin es nennt, auf Englisch und klein: person, car, dog… Leer lassen für alle.",
+            "es": "Como lo nombra el plugin, en inglés y en minúsculas: person, car, dog… Déjelo vacío para todos."
+          },
+          "placeholder": {
+            "en": "e.g. person",
+            "fr": "ex. person",
+            "de": "z. B. person",
+            "es": "p. ej. person"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "camera_name",
+          "type": "string",
+          "label": {
+            "en": "Camera name",
+            "fr": "Nom de la caméra",
+            "de": "Kameraname",
+            "es": "Nombre de la cámara"
+          }
+        },
+        {
+          "key": "label",
+          "type": "string",
+          "label": {
+            "en": "Object (label)",
+            "fr": "Objet (étiquette)",
+            "de": "Objekt (Label)",
+            "es": "Objeto (etiqueta)"
+          }
+        },
+        {
+          "key": "score",
+          "type": "number",
+          "label": {
+            "en": "Confidence (%)",
+            "fr": "Confiance (%)",
+            "de": "Konfidenz (%)",
+            "es": "Confianza (%)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "camera_offline",
+      "label": {
+        "en": "Shinobi: camera offline",
+        "fr": "Shinobi : caméra hors ligne",
+        "de": "Shinobi: Kamera offline",
+        "es": "Shinobi: cámara sin conexión"
+      },
+      "description": {
+        "en": "A camera watching or recording in Shinobi loses its stream for 30 seconds, or Shinobi itself stops answering.",
+        "fr": "Une caméra en surveillance ou en enregistrement dans Shinobi perd son flux depuis 30 secondes, ou Shinobi lui-même ne répond plus.",
+        "de": "Eine in Shinobi überwachende oder aufnehmende Kamera verliert seit 30 Sekunden ihren Stream, oder Shinobi selbst antwortet nicht mehr.",
+        "es": "Una cámara en vigilancia o grabación en Shinobi pierde su flujo durante 30 segundos, o el propio Shinobi deja de responder."
+      },
+      "fields": [
+        {
+          "key": "camera",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra",
+            "de": "Kamera",
+            "es": "Cámara"
+          },
+          "required": false,
+          "description": {
+            "en": "Leave empty for every camera.",
+            "fr": "Laisser vide pour toutes les caméras.",
+            "de": "Leer lassen für alle Kameras.",
+            "es": "Déjelo vacío para todas las cámaras."
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "camera_name",
+          "type": "string",
+          "label": {
+            "en": "Camera name",
+            "fr": "Nom de la caméra",
+            "de": "Kameraname",
+            "es": "Nombre de la cámara"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "set_mode",
+      "label": {
+        "en": "Shinobi: record or watch only",
+        "fr": "Shinobi : enregistrer ou surveiller",
+        "de": "Shinobi: aufnehmen oder überwachen",
+        "es": "Shinobi: grabar o solo vigilar"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "Puts a camera to record (continuous recording) or back to watch only, e.g. while nobody is home.",
+        "fr": "Passe une caméra en enregistrement (continu) ou la remet en surveillance seule, ex. quand personne n'est à la maison.",
+        "de": "Schaltet eine Kamera auf Aufnahme (durchgehend) oder zurück auf nur überwachen, z. B. wenn niemand zu Hause ist.",
+        "es": "Pone una cámara en grabación (continua) o de vuelta en solo vigilancia, p. ej. cuando no hay nadie en casa."
+      },
+      "timeout_seconds": 30,
       "fields": [
         {
-          "key": "device",
+          "key": "camera",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra",
+            "de": "Kamera",
+            "es": "Cámara"
+          },
           "required": true
-        }
-      ],
-      "outputs": [
+        },
         {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "key": "mode",
+          "type": "select",
+          "label": {
+            "en": "Mode",
+            "fr": "Mode",
+            "de": "Modus",
+            "es": "Modo"
+          },
+          "required": true,
+          "options": [
+            {
+              "value": "record",
+              "label": {
+                "en": "Record",
+                "fr": "Enregistrement",
+                "de": "Aufnahme",
+                "es": "Grabación"
+              }
+            },
+            {
+              "value": "start",
+              "label": {
+                "en": "Watch only",
+                "fr": "Surveillance seule",
+                "de": "Nur überwachen",
+                "es": "Solo vigilancia"
+              }
+            }
+          ]
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "camera",
+      "label": {
+        "en": "Shinobi camera",
+        "fr": "Caméra Shinobi",
+        "de": "Shinobi-Kamera",
+        "es": "Cámara Shinobi"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "The image, motion, the objects seen, the mode, and buttons to record and refresh.",
+        "fr": "L'image, le mouvement, les objets vus, le mode, et des boutons d'action.",
+        "de": "Bild, Bewegung, gesehene Objekte, Modus und Schaltflächen zum Aufnehmen und Aktualisieren.",
+        "es": "La imagen, el movimiento, los objetos vistos, el modo y botones de acción."
+      },
+      "icon": "video",
+      "action_timeout_seconds": 30,
+      "settings": [
+        {
+          "key": "camera",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra",
+            "de": "Kamera",
+            "es": "Cámara"
+          },
+          "required": true
+        }
+      ]
     }
   ]
 }

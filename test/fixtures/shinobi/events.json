@@ -1,0 +1,164 @@
+[
+  {
+    "f": "detector_trigger",
+    "id": "FrontDoor",
+    "ke": "TestGroup",
+    "time": "2026-10-22T11:04:27.246Z",
+    "details": {
+      "plug": "built-in",
+      "name": "multipleRegions",
+      "reason": "motion",
+      "confidence": 6,
+      "matrices": [
+        {
+          "confidence": 6.25,
+          "width": 119,
+          "height": 119,
+          "x": 330,
+          "y": 120,
+          "tag": "FULL_FRAME"
+        }
+      ],
+      "imgHeight": "360",
+      "imgWidth": "640"
+    },
+    "doObjectDetection": false
+  },
+  {
+    "f": "detector_trigger",
+    "id": "FrontDoor",
+    "ke": "TestGroup",
+    "time": "2026-10-22T11:15:15.944Z",
+    "details": {
+      "plug": "Yolo",
+      "name": "Yolo",
+      "reason": "object",
+      "confidence": 0.87,
+      "matrices": [
+        {
+          "x": 100,
+          "y": 80,
+          "width": 120,
+          "height": 200,
+          "tag": "person",
+          "confidence": 0.87
+        },
+        {
+          "x": 300,
+          "y": 150,
+          "width": 200,
+          "height": 120,
+          "tag": "car",
+          "confidence": 0.66
+        }
+      ],
+      "imgHeight": 360,
+      "imgWidth": 640
+    },
+    "doObjectDetection": false
+  },
+  {
+    "id": "FrontDoor",
+    "ke": "TestGroup",
+    "status": "Restarting",
+    "code": 4,
+    "f": "monitor_status"
+  },
+  {
+    "id": "FrontDoor",
+    "ke": "TestGroup",
+    "status": "Starting",
+    "code": 1,
+    "f": "monitor_status"
+  },
+  {
+    "f": "monitor_starting",
+    "mid": "FrontDoor",
+    "time": "2026-10-22T11-16-05"
+  },
+  {
+    "id": "FrontDoor",
+    "ke": "TestGroup",
+    "status": "Watching",
+    "code": 2,
+    "f": "monitor_status"
+  },
+  {
+    "id": "Garage",
+    "ke": "TestGroup",
+    "status": "Stopped",
+    "code": 5,
+    "f": "monitor_status"
+  },
+  {
+    "id": "Garage",
+    "ke": "TestGroup",
+    "status": "Starting",
+    "code": 1,
+    "f": "monitor_status"
+  },
+  {
+    "f": "monitor_starting",
+    "mode": "start",
+    "mid": "Garage",
+    "time": "2026-10-22T11-17-18"
+  },
+  {
+    "id": "Garage",
+    "ke": "TestGroup",
+    "status": "Watching",
+    "code": 2,
+    "f": "monitor_status"
+  },
+  {
+    "id": "FrontDoor",
+    "ke": "TestGroup",
+    "status": "Restarting",
+    "code": 4,
+    "f": "monitor_status"
+  },
+  {
+    "id": "FrontDoor",
+    "ke": "TestGroup",
+    "status": "Starting",
+    "code": 1,
+    "f": "monitor_status"
+  },
+  {
+    "f": "monitor_starting",
+    "mid": "FrontDoor",
+    "time": "2026-10-22T11-17-54"
+  },
+  {
+    "id": "FrontDoor",
+    "ke": "TestGroup",
+    "status": "Watching",
+    "code": 2,
+    "f": "monitor_status"
+  },
+  {
+    "f": "detector_trigger",
+    "id": "FrontDoor",
+    "ke": "TestGroup",
+    "time": "2026-10-22T11:18:27.341Z",
+    "details": {
+      "plug": "built-in",
+      "name": "multipleRegions",
+      "reason": "motion",
+      "confidence": 6,
+      "matrices": [
+        {
+          "confidence": 6.25,
+          "width": 119,
+          "height": 119,
+          "x": 330,
+          "y": 120,
+          "tag": "driveway"
+        }
+      ],
+      "imgHeight": "360",
+      "imgWidth": "640"
+    },
+    "doObjectDetection": false
+  }
+]
